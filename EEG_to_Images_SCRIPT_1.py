@@ -40,8 +40,8 @@ import copy
 import scipy
 
 def main():
-    PATH_TO_DATA = "PATH TO DATA"       #This should be the path to the root folder containing subject sub-folders with their Kara One data
-    SUBJECTS = ['MM05', 'MM08', 'MM09', 'MM10', 'MM11', 'MM12', 'MM14', 'MM15', 'MM16', 'MM18', 'MM19', 'MM20', 'MM21', 'P02']
+    PATH_TO_DATA = "C:\Users\jobso\PastaGeral\MestradoUnicamp\Kara Dataset"       #This should be the path to the root folder containing subject sub-folders with their Kara One data
+    SUBJECTS = ['MM05', 'MM08']
 
     #Suppress plotting of images
     plt.ioff()
