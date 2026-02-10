@@ -185,9 +185,9 @@ class Dataset:
                 self.eeg_data = mne.io.read_raw_cnt(f, preload=False)                
                 self.eeg_data.drop_channels(['M1', 'M2', 'VEO', 'HEO', 'EKG', 'EMG', 'Trigger'])
 
-            # for f in glob.glob("all_features_simple.mat"):
-            #     prompts_to_extract = spio.loadmat(f)
-            #     self.prompts = prompts_to_extract['all_features'][0, 0]
+            for f in glob.glob("all_features_simple.mat"):
+                prompts_to_extract = spio.loadmat(f)
+                self.prompts = prompts_to_extract['all_features'][0, 0]
 
             for f in glob.glob("epoch_inds.mat"):
                 self.epoch_inds = spio.loadmat(f, variable_names=('clearing_inds', 'thinking_inds'))

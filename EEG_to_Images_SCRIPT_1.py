@@ -40,7 +40,7 @@ import copy
 import scipy
 
 def main():
-    PATH_TO_DATA = "C:\Users\jobso\PastaGeral\MestradoUnicamp\Kara Dataset"       #This should be the path to the root folder containing subject sub-folders with their Kara One data
+    PATH_TO_DATA = "C:\\Users\\jobso\\PastaGeral\\MestradoUnicamp\\Kara Dataset\\"       #This should be the path to the root folder containing subject sub-folders with their Kara One data
     SUBJECTS = ['MM05', 'MM08']
 
     #Suppress plotting of images
@@ -107,8 +107,11 @@ def main():
         #     ])
         events = copy.deepcopy(subject.epoch_inds['thinking_inds'])
         events = np.reshape(events, (events.shape[1], 1))
+        print(events)
         prompts = []
-        for event in events:
+        for event in events: 
+            print(event)  
+            print(event[0][0])        
             prompts.append(event[0][0])
 
         i = 0
@@ -117,7 +120,8 @@ def main():
             prompts[i] = np.append(prompt, np.array(subject.prompts[5][0][i][0]))
             i += 1
 
-        prompts = np.asarray(prompts)
+        prompts = np.asarray(prompts, dtype=object)
+        
 
         # All prompts need to be int format
         prompts = np.where(prompts == '/iy/', 0, prompts)
@@ -151,6 +155,11 @@ def main():
         epochs_raw = mne.Epochs(raw, prompts, event_id, tmin=-0.01, tmax=5.0, baseline=None)
         epochs_ica = mne.Epochs(ica_data, prompts, event_id, tmin=-0.01, tmax=5.0, baseline=None)
 
+        print(epochs_filtered)
+        print(epochs_filtered.events[:5])
+        print(epochs_filtered.get_data().shape)
+        print(epochs_filtered['/iy/'].get_data().shape)
+
         del events, prompts
 
         # Create ICA
@@ -172,10 +181,21 @@ def main():
         print(ica)
 
         # Plot ICA components
-        i = 0
-        for comp in ica.plot_components():
-            plt.close(comp.savefig(save_path + '\\ICA_Components_' + str(i)))
-            i += 1
+        # i = 0
+        # for comp in ica.plot_components():
+        #     plt.close(comp.savefig(save_path + '\\ICA_Components_' + str(i)))
+        #     i += 1
+
+        # Plot ICA components (robusto para diferentes versões do MNE)
+        figs = ica.plot_components()
+
+        # Se o retorno for uma única figura, transforma em lista
+        if not isinstance(figs, (list, tuple)):
+            figs = [figs]
+
+        for i, fig in enumerate(figs):
+            fig.savefig(save_path + f'\\ICA_Components_{i}.png')
+            plt.close(fig)
 
         # Plot the reconstructed sources (no ICA exclusions)
         plt.close(ica.plot_sources(epochs_filtered).savefig(save_path + '\\Filtered_Epochs_ICAcomps'))
@@ -188,12 +208,25 @@ def main():
             i += 1
 
         # Look for general artifacts
-        ica.detect_artifacts(epochs_ica)
+        #ica.detect_artifacts(epochs_ica) #Substiruir essa linha pelas linhas de artefatos abaixo
+
+        # eog_inds, eog_scores = ica.find_bads_eog(epochs_ica, ch_name='FP1')
+        # ica.exclude.extend(eog_inds)
+
+        # ecg_inds, ecg_scores = ica.find_bads_ecg(epochs_ica)
+        # ica.exclude.extend(ecg_inds)
+
+        # ica.plot_components()
+        # ica.plot_properties(epochs_ica)
+
 
         # Look for EOG Artifacts (ocular) with generous frequency and threshold for detection
         # to add to the exclusion matrix, need to extend the matrix ica.exclude created above
         #eogs = mne.preprocessing.find_eog_events(filtered, event_id=998, l_freq=1, h_freq=100,
         #                                         ch_name=('FP1'), filter_length='10s', thresh=1)
+
+        # carregando os dados epocados de ica para a memória
+        epochs_ica.load_data()
 
         # Apply the ICA, with exclusions for components deemed to contain artifacts
         ica.apply(epochs_ica, n_pca_components=n_components, exclude=ica.exclude)
