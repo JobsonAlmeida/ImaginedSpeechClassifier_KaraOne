@@ -25,10 +25,10 @@ import scipy
 from pyts.image import GramianAngularField
 from sklearn.pipeline import make_pipeline
 
-def main(raw=True, filt=False, IC_A=False, beta=False):
-    PATH_TO_DATA = "...\\KARA_ONE_Data\\ImaginedSpeechData\\"   #Set as appropriate
+def main(raw=False, filt=False, IC_A=False, beta=False):
+    PATH_TO_DATA = "C:\\Users\\jobso\\PastaGeral\\MestradoUnicamp\\Kara Dataset\\ImaginedSpeechData\\"   #Set as appropriate
     #SUBJECTS = ['P02']
-    SUBJECTS = ['MM05', 'MM08', 'MM09', 'MM10', 'MM11', 'MM12', 'MM14', 'MM15', 'MM16', 'MM18', 'MM19', 'MM20', 'MM21', 'P02']
+    SUBJECTS = ['MM05', 'MM08']
 
     #Suppress plotting of images
     plt.ioff()
@@ -51,7 +51,7 @@ def main(raw=True, filt=False, IC_A=False, beta=False):
         for path in paths:
             if not os.path.exists(path):
                 print("Creating required folders")
-                os.mkdir(path)
+                os.makedirs(path)
 
         os.chdir(PATH_TO_DATA + subject + '\\GAM')
 
@@ -61,7 +61,7 @@ def main(raw=True, filt=False, IC_A=False, beta=False):
             df = pd.read_pickle('df_epochs_raw.pkl')
             folder = 'RAW'
 
-        if filt or beta:
+        if filt:
             print("Computing Filtered images")
             #Create Filtered GAF
             df = pd.read_pickle('df_epochs_filtered.pkl')
@@ -166,6 +166,9 @@ def main(raw=True, filt=False, IC_A=False, beta=False):
                 X_gasf = gasf.fit_transform(df_trial.transpose())
                 X_gadf = gadf.fit_transform(df_trial.transpose())
 
+                print(X_gasf.shape)
+                print(X_gadf.shape)
+
                 fpath = [PATH_TO_DATA + subject + '\\GAM\\GASF_Images\\' + folder + '\\trial_' + str(e),
                          PATH_TO_DATA + subject + '\\GAM\\GADF_Images\\' + folder + '\\trial_' + str(e)]
 
@@ -190,4 +193,4 @@ def main(raw=True, filt=False, IC_A=False, beta=False):
         print("Subject finished!")
 
 if __name__ == "__main__":
-    main(raw=False, beta=True)
+    main(filt=True)
