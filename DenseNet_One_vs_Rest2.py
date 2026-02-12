@@ -46,7 +46,7 @@ from tensorflow.keras import layers
 
 def main(gaf, word, method, sub):
 
-    PATH_TO_DATA = "PATH TO DATA"       #This should be the path to the root folder containing subject sub-folders with their Kara One data
+    PATH_TO_DATA = "C:\\Users\\jobso\\PastaGeral\\MestradoUnicamp\\Kara Dataset\\"       #This should be the path to the root folder containing subject sub-folders with their Kara One data
 
     subject = sub
 
@@ -62,7 +62,7 @@ def main(gaf, word, method, sub):
 
     """ Setup target and EEG dataframes"""
 
-    df = pd.read_csv(PATH_TO_DATA + subject + "\\kinect_data\\labels.txt", delimiter="\n", header=None)
+    df = pd.read_csv(PATH_TO_DATA + subject + "\\kinect_data\\labels.txt", header=None)
 
     df.columns = ['prompt']
     path = PATH_TO_DATA + "ImaginedSpeechData\\" + subject + "\\GAM\\" + sum_diff + "_Images\\" + im_type
@@ -87,8 +87,10 @@ def main(gaf, word, method, sub):
                 im = Image.open(path + "\\" + folder + '\\' + file)
                 im = np.asarray(im)
                 images.append(im[:, :, :3])
-            trial_ims.append(np.vstack((i for i in images)))
+            trial_ims.append(np.vstack([i for i in images]))
+
         del images, im
+
         images = []
         for img in trial_ims:
             im = Image.fromarray(img)
@@ -126,18 +128,27 @@ def main(gaf, word, method, sub):
                                                                             test_size=0.2, random_state=9)
 
     #double the target training instance to rebalance data set
-    target_train_x = target_train_x.append(target_train_x.copy(), ignore_index=True)
-    target_train_y = target_train_y.append(target_train_y.copy(), ignore_index=True)
+    #target_train_x = target_train_x.append(target_train_x.copy(), ignore_index=True)
+    target_train_x = pd.concat([target_train_x, target_train_x.copy()], ignore_index=True)
+    #target_train_y = target_train_y.append(target_train_y.copy(), ignore_index=True)
+    target_train_y = pd.concat([target_train_y, target_train_y.copy()], ignore_index=True)
 
-    train_x = target_train_x.append(comp_train_x, ignore_index=True)
-    train_y = target_train_y.append(comp_train_y, ignore_index=True)
+    # train_x = target_train_x.append(comp_train_x, ignore_index=True)
+    train_x = pd.concat([target_train_x, comp_train_x ], ignore_index=True)
+    # train_y = target_train_y.append(comp_train_y, ignore_index=True)
+    train_y = pd.concat([target_train_y, comp_train_y], ignore_index=True )
+    
 
-    test_x = target_test_x.append(comp_test_x, ignore_index=True)
-    test_y = target_test_y.append(comp_test_y, ignore_index=True)
+    # test_x = target_test_x.append(comp_test_x, ignore_index=True)
+    test_x = pd.concat([target_test_x, comp_test_x], ignore_index=True)
+    # test_y = target_test_y.append(comp_test_y, ignore_index=True)
+    test_y = pd.concat([target_test_y, comp_test_y], ignore_index=True )
 
     #Can comprise a val set of different sizes to aid in model evaluation during trianing (can be used for model selection)
-    val_x = target_test_x.append(comp_test_x.sample(frac=1).reset_index(drop=True))
-    val_y = target_test_y.append(comp_test_y.sample(frac=1).reset_index(drop=True))
+    # val_x = target_test_x.append(comp_test_x.sample(frac=1).reset_index(drop=True))
+    val_x = pd.concat([target_test_x, comp_test_x.sample(frac=1).reset_index(drop=True)],ignore_index=True)
+    # val_y = target_test_y.append(comp_test_y.sample(frac=1).reset_index(drop=True))
+    val_y = pd.concat([target_test_y, comp_test_y.sample(frac=1).reset_index(drop=True)], ignore_index=True)
 
     # train_x = target_train_x
     # train_y = target_train_y
@@ -156,6 +167,9 @@ def main(gaf, word, method, sub):
     train_x = np.asarray(train_x.tolist())
     test_x = np.asarray(test_x.tolist())
     val_x = np.asarray(val_x.tolist())
+
+    print(train_x.shape)
+    print(train_x.dtype)
 
     #for multiclass
     # train_y = pd.get_dummies(train_y)
@@ -183,7 +197,8 @@ def main(gaf, word, method, sub):
         os.mkdir(save_path)
 
     #Set model save path
-    save_model = save_path + '\\' + target + '_model'
+    #save_model = save_path + '\\' + target + '_model'
+    save_model = os.path.join(save_path, f"{target}_model.keras")
 
     # Build and fit model
     print("Building DenseNet Model")
@@ -197,8 +212,7 @@ def main(gaf, word, method, sub):
     else:
         batch = 12
 
-    base_model = applications.densenet.DenseNet121(weights='imagenet', include_top=False,
-                                                   input_shape=INPUT_SHAPE)
+    base_model = applications.densenet.DenseNet121(weights='imagenet', include_top=False, input_shape=INPUT_SHAPE)
 
     x = base_model.output
 
@@ -230,13 +244,13 @@ def main(gaf, word, method, sub):
     #chk = ModelCheckpoint(save_model, monitor='val_loss', save_best_only=True, mode='min',  save_freq='epoch', verbose=1)
     #chk1 = ModelCheckpoint(save_model, monitor='val_precision', save_best_only=True, mode='max',  save_freq='epoch', verbose=1)
     #chk2 = ModelCheckpoint(save_model, monitor='val_recall', save_best_only=True, mode='max',  save_freq='epoch', verbose=1)
-    chk3 = ModelCheckpoint(save_model, monitor='loss', save_best_only=True, mode='min', save_freq='epoch', period=50, verbose=1)
+    chk3 = ModelCheckpoint(save_model, monitor='loss', save_best_only=True, mode='min', save_freq='epoch', verbose=1)
 
     os.chdir(save_path)
 
     es = EarlyStopping(monitor='loss', min_delta=0.0001, verbose=1, patience=100, mode='auto')
     history = model.fit(train_x, train_y,
-                        epochs=1000,
+                        epochs=1,
                         batch_size=batch,
                         verbose=1,
                         callbacks=[anne, chk3],
@@ -296,6 +310,7 @@ def main(gaf, word, method, sub):
                     }
 
     del model, history
+    
     gc.collect()
     K.clear_session()
     tf.compat.v1.reset_default_graph()
@@ -378,9 +393,13 @@ def main(gaf, word, method, sub):
     print(avrg_acc)
 
     # Save accuracies to csv files
-    (pd.DataFrame.from_dict(data=dense_acc, orient='index').to_csv(
-        "G:\\UWA_MDS\\2021SEM1\\Research_Project\\KARA_ONE_Data\\ImaginedSpeechData\\" + subject + "\\DenseNet\\" + im_type +
-        '\\' + sum_diff + '\\' + target + "_DenseNet_acc.csv", header=False))
+    # (pd.DataFrame.from_dict(data=dense_acc, orient='index').to_csv(
+    #     "G:\\UWA_MDS\\2021SEM1\\Research_Project\\KARA_ONE_Data\\ImaginedSpeechData\\" + subject + "\\DenseNet\\" + im_type +
+    #     '\\' + sum_diff + '\\' + target + "_DenseNet_acc.csv", header=False))
+
+    acc_path = os.path.join(save_path, f"{target}_DenseNet_acc.csv")
+    pd.DataFrame.from_dict(data=dense_acc, orient='index').to_csv(acc_path, header=False)
+
 
 if __name__ == "__main__":
     print("subject: {}".format(sys.argv[4]))
